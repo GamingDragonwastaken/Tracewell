@@ -36,3 +36,12 @@ Open `http://127.0.0.1:4174/`. The server is dependency-free and starts with thr
 ## Verification boundary
 
 The usable local product has two explicit layers: a browser-native evidence workspace for repeated review and a dependency-free Node reconciliation kernel that can be imported into tests or a future service. The React/Fastify/SQLite adapters described in `TRD.md` remain a deployment option; they are not hidden dependencies of this local product. Every packet is synthetic and stays in the browser unless the operator exports it.
+
+## Verified status
+
+Verified 2026-08-07:
+
+- `npm.cmd test`: 5 passed, 0 failed.
+- Covered conflicting owner evidence, rejected critical findings, expired evidence, user-authored packets, and contradictory observations.
+- The deterministic extraction/reconciliation path was exercised; optional model extraction providers were not.
+- Local HTTP smoke checks returned 200 for the evidence workspace and reconciliation kernel.
