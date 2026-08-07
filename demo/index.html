@@ -1,0 +1,74 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="description" content="Tracewell local evidence consistency engine">
+    <title>Tracewell / evidence room</title>
+    <link rel="stylesheet" href="/demo/styles.css">
+  </head>
+  <body>
+    <a class="skip-link" href="#main">Skip to main content</a>
+    <div class="app-shell">
+      <aside class="sidebar" aria-label="Case navigation">
+        <div class="brand"><span class="brand-line"></span><div><b>TRACEWELL</b><small>EVIDENCE ROOM</small></div></div>
+        <div class="sidebar-title"><span>CASE INBOX</span><b id="case-count">03</b></div>
+        <div id="case-list" class="case-list"></div>
+        <div class="sidebar-foot"><span class="synthetic-dot"></span><span>LOCAL / SYNTHETIC DATA</span></div>
+      </aside>
+
+      <main id="main" class="main">
+        <header class="case-header">
+          <div><p class="eyebrow">Evidence consistency engine <span>/</span> case workspace</p><h1 id="case-title">Northline Systems / ownership packet</h1><p id="case-subtitle" class="lede">Three documents, one unresolved identity path. Review the source spans before accepting a conclusion.</p></div>
+          <div class="header-actions"><span class="synthetic-badge">SYNTHETIC CASE</span><button id="export-button" class="button button-outline" type="button">Export bundle</button></div>
+        </header>
+
+        <section class="coverage" aria-label="Case coverage">
+          <div class="coverage-item"><b id="verified-count">2</b><span>verified fields</span></div>
+          <div class="coverage-item coverage-warning"><b id="unresolved-count">1</b><span>unresolved</span></div>
+          <div class="coverage-item coverage-amber"><b id="contradicted-count">1</b><span>contradicted</span></div>
+          <div class="coverage-item coverage-coral"><b id="expired-count">0</b><span>expired</span></div>
+          <div class="coverage-state"><span id="case-status" class="state state-review-required">REVIEW REQUIRED</span><small id="case-updated">updated 6 min ago</small></div>
+        </section>
+
+        <section id="packet-builder" class="packet-builder" aria-labelledby="packet-builder-heading">
+          <div class="packet-builder-heading"><div><p class="eyebrow">00 / packet intake</p><h2 id="packet-builder-heading">Reconcile your own evidence packet</h2></div><span class="synthetic-badge">LOCAL JSON / REDACTED EXPORT</span></div>
+          <div class="packet-builder-grid"><div class="packet-builder-copy"><p>Bring a packet of synthetic documents and extracted observations. Tracewell normalizes values, checks required fields, detects contradiction and expiry, and keeps the case in review until a person decides.</p><div class="packet-rule"><span>rules</span><b>consistency + freshness + completeness</b><small>no remote extractor / no real identity data</small></div></div><div class="packet-builder-form"><label class="file-control">Import packet<input id="packet-file" type="file" accept="application/json,.json"></label><textarea id="packet-json" spellcheck="false" aria-label="Case packet JSON" placeholder="Paste a case packet JSON contract here..."></textarea><div class="packet-actions"><button id="load-sample" class="button button-outline" type="button">Load sample</button><button id="validate-packet" class="button button-quiet" type="button">Validate</button><button id="save-packet" class="button button-mint" type="button">Reconcile + save</button></div><div class="packet-bottom"><span id="packet-feedback" data-tone="muted">No imported packet yet.</span><button id="clear-cases" class="text-button" type="button">Clear saved packets</button></div></div></div>
+        </section>
+
+        <section class="workspace-grid" aria-label="Evidence workspace">
+          <div class="finding-column">
+            <div class="column-heading"><div><p class="eyebrow">01 / review queue</p><h2>Findings</h2></div><span id="finding-count" class="count-badge">1 OPEN</span></div>
+            <div id="field-list" class="field-list"></div>
+            <div class="method-note"><span class="method-mark">i</span><p><b>Method note</b> Fields are only accepted when a reviewer can follow the evidence link. Confidence alone never verifies a case.</p></div>
+          </div>
+
+          <div class="graph-column">
+            <div class="column-heading"><div><p class="eyebrow">02 / provenance graph</p><h2>Source paths</h2></div><span class="mono" id="rule-version">RULE SET identifier-exact-v2</span></div>
+            <div class="graph-stage" aria-label="Evidence graph">
+              <div class="graph-caption"><span><i class="legend-dot dot-source"></i> source</span><span><i class="legend-dot dot-field"></i> field</span><span><i class="legend-dot dot-rule"></i> rule finding</span></div>
+              <div class="graph-lines"><span class="line line-one"></span><span class="line line-two"></span><span class="line line-three"></span></div>
+              <button id="graph-source-one" class="graph-node source-node source-one" data-graph-source="registry" type="button"><span class="node-kicker">PDF / REV 2</span><b>Registry extract</b><small>sha256:7d9e...2c4a</small></button>
+              <button id="graph-source-two" class="graph-node source-node source-two" data-graph-source="declaration" type="button"><span class="node-kicker">FORM / REV 1</span><b>Ownership declaration</b><small>sha256:98ae...1140</small></button>
+              <button id="graph-field" class="graph-node field-node" type="button"><span class="node-kicker">FIELD / 0.71</span><b>Beneficial owner</b><small>unresolved</small></button>
+              <button id="graph-rule" class="graph-node rule-node" type="button"><span class="node-kicker">CRITICAL / OPEN</span><b>Identifier mismatch</b><small>identifier-exact-v2</small></button>
+            </div>
+            <div class="graph-footer"><span>3 source links / 1 finding</span><span class="mono">HASHES REDACTED</span></div>
+          </div>
+
+          <div class="source-column">
+            <div class="column-heading"><div><p class="eyebrow">03 / selected evidence</p><h2 id="source-title">Registry extract</h2></div><span class="signal signal-cyan">LINKED</span></div>
+            <div class="source-meta"><span>PDF / REVISION 2</span><span class="mono">sha256:7d9e...2c4a</span></div>
+            <div id="source-copy" class="document-sheet"><span class="redact-label">REDACTED FIXTURE EXCERPT</span><p>Registered owner: <mark>M. Alvarez</mark></p><p>Jurisdiction: Canada</p><p>Registry reference: NL-2048</p><div class="document-rule"></div><small>Source span / page 1 / lines 08-11</small></div>
+            <div class="provenance"><div><span>Extractor</span><b>fixture-extractor 0.4</b></div><div><span>Confidence</span><b>0.71 / review floor</b></div><div><span>Captured</span><b>2026-08-07 08:42Z</b></div></div>
+            <div class="decision-panel"><p class="eyebrow">Reviewer decision</p><p id="decision-copy">Two source values cannot both be accepted as the same owner identifier.</p><div class="decision-actions"><button class="button button-mint" data-action="accept" type="button">Accept selected</button><button class="button button-coral" data-action="reject" type="button">Reject finding</button><button class="button button-quiet" data-action="request" type="button">Request evidence</button></div></div>
+          </div>
+        </section>
+
+        <section class="log-panel" aria-labelledby="log-heading"><div class="column-heading"><div><p class="eyebrow">04 / decision log</p><h2 id="log-heading">Append-only review history</h2></div><span class="mono">LOCAL CASE STORE</span></div><div id="decision-log" class="decision-log"></div></section>
+        <footer class="footer-note"><span>Tracewell / proof-of-work build 0.1</span><span>no real identity data</span><span class="mono">MANIFEST READY</span></footer>
+      </main>
+    </div>
+    <script type="module" src="/demo/app.js"></script>
+  </body>
+</html>

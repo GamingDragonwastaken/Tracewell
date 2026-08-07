@@ -1,0 +1,15 @@
+{
+  "id": "custom-evidence-packet",
+  "label": "Custom evidence packet",
+  "profile": "vendor-onboarding",
+  "requiredFields": ["beneficial_owner", "incorporation_country", "renewal_date"],
+  "documents": [
+    { "id": "registry", "label": "Corporate registry extract", "type": "PDF", "revision": 1, "excerpt": "Registered owner: Example Holdings\nJurisdiction: Canada", "hash": "sha256:example-registry" },
+    { "id": "certificate", "label": "Incorporation certificate", "type": "PDF", "revision": 1, "excerpt": "Renewal date: 2027-10-03", "hash": "sha256:example-certificate" }
+  ],
+  "observations": [
+    { "key": "beneficial_owner", "label": "Beneficial owner", "value": "Example Holdings", "sourceId": "registry", "confidence": 0.98, "extractor": "fixture-extractor 0.4" },
+    { "key": "incorporation_country", "label": "Incorporation country", "value": "Canada", "sourceId": "registry", "confidence": 0.99, "extractor": "fixture-extractor 0.4" },
+    { "key": "renewal_date", "label": "Renewal date", "value": "2027-10-03", "sourceId": "certificate", "confidence": 0.97, "extractor": "fixture-extractor 0.4" }
+  ]
+}
