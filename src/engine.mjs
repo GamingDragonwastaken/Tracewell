@@ -54,8 +54,9 @@ const rawBuiltins = [
 ];
 
 const keyLabel = (key) => key.replaceAll("_", " ").replace(/\b\w/g, (character) => character.toUpperCase());
-const normalize = (value) => String(value ?? "").trim().toLocaleLowerCase().replace(/[^a-z0-9]+/g, " ").trim();
+const normalize = (value) => String(value ?? "").trim().toLowerCase().replace(/[^a-z0-9]+/g, " ").trim();
 const validId = (id) => /^[a-z0-9][a-z0-9-]{2,48}$/.test(String(id ?? ""));
+const validFieldKey = (key) => /^[a-z][a-z0-9_]{1,64}$/.test(String(key ?? ""));
 
 export function validatePacket(input) {
   const errors = [];
@@ -64,16 +65,29 @@ export function validatePacket(input) {
   if (!String(input?.label ?? "").trim()) errors.push("label is required.");
   if (!Array.isArray(input?.documents) || input.documents.length === 0) errors.push("at least one document is required.");
   if (!Array.isArray(input?.observations) || input.observations.length === 0) errors.push("at least one extracted observation is required.");
-  const documentIds = new Set((input?.documents ?? []).map((document) => document.id));
+  if (input?.requiredFields !== undefined && (!Array.isArray(input.requiredFields) || input.requiredFields.length === 0)) errors.push("requiredFields must be a non-empty list when provided.");
+  const documentIds = new Set();
   for (const [index, document] of (input?.documents ?? []).entries()) {
-    if (!String(document?.id ?? "").trim()) errors.push(`documents[${index}].id is required.`);
+    if (!validId(document?.id)) errors.push(`documents[${index}].id must use lowercase letters, numbers, and hyphens.`);
+    else if (documentIds.has(document.id)) errors.push(`documents[${index}].id must be unique.`);
+    else documentIds.add(document.id);
     if (!String(document?.label ?? "").trim()) errors.push(`documents[${index}].label is required.`);
+    if (!String(document?.type ?? "").trim()) errors.push(`documents[${index}].type is required.`);
     if (!String(document?.excerpt ?? "").trim()) errors.push(`documents[${index}].excerpt is required.`);
+    if (!String(document?.hash ?? "").trim()) errors.push(`documents[${index}].hash is required.`);
+    if (document?.expiresAt && Number.isNaN(new Date(document.expiresAt).getTime())) errors.push(`documents[${index}].expiresAt must be an ISO-compatible date.`);
+  }
+  const fieldKeys = new Set();
+  for (const [index, key] of (input?.requiredFields ?? []).entries()) {
+    if (!validFieldKey(key)) errors.push(`requiredFields[${index}] must use lowercase letters, numbers, and underscores.`);
+    else if (fieldKeys.has(key)) errors.push(`requiredFields[${index}] must be unique.`);
+    else fieldKeys.add(key);
   }
   for (const [index, observation] of (input?.observations ?? []).entries()) {
-    if (!String(observation?.key ?? "").trim()) errors.push(`observations[${index}].key is required.`);
+    if (!validFieldKey(observation?.key)) errors.push(`observations[${index}].key must use lowercase letters, numbers, and underscores.`);
+    if (!String(observation?.value ?? "").trim()) errors.push(`observations[${index}].value is required.`);
     if (!documentIds.has(observation?.sourceId)) errors.push(`observations[${index}].sourceId must reference a document.`);
-    if (Number(observation?.confidence) < 0 || Number(observation?.confidence) > 1) errors.push(`observations[${index}].confidence must be between 0 and 1.`);
+    if (!Number.isFinite(Number(observation?.confidence)) || Number(observation?.confidence) < 0 || Number(observation?.confidence) > 1) errors.push(`observations[${index}].confidence must be between 0 and 1.`);
   }
   return { ok: errors.length === 0, errors };
 }
@@ -128,23 +142,54 @@ export function summarizeCase(record) {
   };
 }
 
-export function applyReview(record, action, findingId = record.findings.find((item) => item.state === "open")?.id) {
+function refreshStatus(record) {
+  if (record.findings.some((item) => item.state === "rejected")) return "REJECTED";
+  if (record.findings.some((item) => item.rule === "freshness-window-v1" && ["open", "deferred", "accepted"].includes(item.state))) return "EXPIRED";
+  if (record.findings.some((item) => item.state === "open")) return "REVIEW_REQUIRED";
+  const allRequiredAccepted = record.fields
+    .filter((item) => record.requiredFields.includes(item.key))
+    .every((item) => item.state === "accepted");
+  return allRequiredAccepted ? "VERIFIED" : "REVIEW_REQUIRED";
+}
+
+export function applyReview(record, action, findingId = record.findings.find((item) => item.state === "open")?.id, sourceId = "") {
   const next = structuredClone(record);
   const target = next.findings.find((item) => item.id === findingId);
-  if (!target || !["accept", "reject", "request", "defer"].includes(action)) return next;
-  target.state = { accept: "accepted", reject: "rejected", request: "deferred", defer: "deferred" }[action];
+  if (!target || target.state !== "open" || !["accept", "reject", "request", "defer"].includes(action)) return next;
   const field = next.fields.find((item) => item.id === target.field);
-  if (field && action === "accept") field.state = "accepted";
+  const isConflict = target.rule === "identifier-exact-v2" || target.rule === "value-consistency-v1";
+
+  if (action === "accept" && target.rule === "freshness-window-v1") {
+    next.log.push({ at: "now", actor: "reviewer", action: "Acceptance refused", detail: `${target.rule} requires refreshed evidence before verification.` });
+    return next;
+  }
+  if (action === "accept" && isConflict) {
+    const permittedSources = [target.left, target.right].filter(Boolean);
+    if (!permittedSources.includes(sourceId)) {
+      next.log.push({ at: "now", actor: "reviewer", action: "Source selection required", detail: `${target.rule} cannot be accepted without selecting one linked source.` });
+      return next;
+    }
+    target.resolutionSourceId = sourceId;
+    if (field) {
+      const selectedValue = field.values.find((value) => value.sourceId === sourceId);
+      field.state = "accepted";
+      field.sourceId = sourceId;
+      field.value = selectedValue?.value ?? field.value;
+      field.confidence = selectedValue?.confidence ?? field.confidence;
+    }
+  }
+
+  target.state = { accept: "accepted", reject: "rejected", request: "deferred", defer: "deferred" }[action];
+  if (field && action === "accept" && !isConflict) field.state = "accepted";
   if (field && action === "reject") field.state = "rejected";
-  if (action === "reject") next.status = "REJECTED";
-  else if (action === "accept" && next.findings.every((item) => item.state !== "open") && next.fields.filter((item) => next.requiredFields.includes(item.key)).every((item) => item.state === "accepted")) next.status = "VERIFIED";
-  else next.status = "REVIEW_REQUIRED";
-  next.log.push({ at: "now", actor: "reviewer", action: `${action} decision recorded`, detail: `${target.rule} / evidence retained` });
+  next.status = refreshStatus(next);
+  const detail = action === "accept" && isConflict ? `${target.rule} / selected source ${sourceId}` : `${target.rule} / evidence retained`;
+  next.log.push({ at: "now", actor: "reviewer", action: `${action} decision recorded`, detail });
   return next;
 }
 
 export function exportBundle(record) {
-  return { schemaVersion: "0.2", synthetic: true, case: record, manifest: { files: record.sources.map((source) => source.hash), redaction: "default", ruleSet: "identifier-exact-v2 / freshness-window-v1" } };
+  return { schemaVersion: "0.3", synthetic: true, case: record, manifest: { files: record.sources.map((source) => source.hash), redaction: "default", ruleSet: "identifier-exact-v2 / freshness-window-v1", reviewStatus: record.status } };
 }
 
 export const BUILTIN_CASES = rawBuiltins.map((packet) => reconcilePacket(packet));

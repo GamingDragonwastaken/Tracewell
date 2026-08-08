@@ -2,11 +2,14 @@ import test from "node:test";
 import assert from "node:assert/strict";
 import { applyReview, findCase, parsePacket, reconcilePacket, summarizeCase, validatePacket } from "../src/domain.mjs";
 
-test("conflicting owner evidence remains review-required", () => {
+test("conflicting owner evidence requires an explicit source selection", () => {
   const record = findCase("northline-ownership");
   assert.equal(record.status, "REVIEW_REQUIRED");
   assert.equal(summarizeCase(record).contradicted, 1);
-  assert.equal(applyReview(record, "accept").status, "VERIFIED");
+  assert.equal(applyReview(record, "accept").status, "REVIEW_REQUIRED");
+  const resolved = applyReview(record, "accept", "f-conflict-beneficial_owner", "registry");
+  assert.equal(resolved.status, "VERIFIED");
+  assert.equal(resolved.fields.find((field) => field.id === "beneficial_owner").value, "M. Alvarez");
 });
 
 test("rejecting a critical finding rejects the case", () => {
@@ -52,4 +55,27 @@ test("imported contradictory observations require review", () => {
   const record = reconcilePacket(packet);
   assert.equal(record.status, "REVIEW_REQUIRED");
   assert.equal(record.findings.length, 1);
+});
+
+test("packet validation rejects duplicate documents and dangling evidence", () => {
+  const result = validatePacket({
+    id: "invalid-packet",
+    label: "Invalid packet",
+    requiredFields: ["owner", "owner"],
+    documents: [
+      { id: "doc-a", label: "Source A", type: "TXT", excerpt: "Owner: A", hash: "sha256:a" },
+      { id: "doc-a", label: "Source B", type: "TXT", excerpt: "Owner: B", hash: "sha256:b" }
+    ],
+    observations: [{ key: "owner", value: "A", sourceId: "missing", confidence: 1 }]
+  });
+  assert.equal(result.ok, false);
+  assert.ok(result.errors.some((error) => error.includes("unique")));
+  assert.ok(result.errors.some((error) => error.includes("must reference")));
+});
+
+test("expired evidence cannot be accepted as a route to verification", () => {
+  const record = findCase("apex-expired");
+  const next = applyReview(record, "accept", "f-expiry-certificate", "certificate");
+  assert.equal(next.status, "EXPIRED");
+  assert.equal(next.findings.find((finding) => finding.id === "f-expiry-certificate").state, "open");
 });
