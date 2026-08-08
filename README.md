@@ -2,6 +2,9 @@
 
 Local evidence consistency and provenance engine for consequential applications.
 
+**Start here:** [read the engineering case study](CASE-STUDY.md), then use the
+local walkthrough below. Every bundled document and packet is synthetic.
+
 Tracewell turns synthetic documents into a source-linked evidence graph, detects contradictions and expiry, and routes uncertainty to a human review queue.
 
 ## What the demo proves
@@ -24,6 +27,19 @@ Tracewell uses synthetic fixtures only. It does not approve real immigration, fi
 4. Open the decision log.
 5. Export and verify the redacted evidence bundle.
 
+## 90-second reviewer walkthrough
+
+1. Run `npm.cmd test`, then start the workspace with `npm.cmd run dev`.
+2. Open `http://127.0.0.1:4174/` and choose **Northline Systems / ownership
+   packet**.
+3. Inspect the conflicting beneficial-owner observations and their two source
+   spans. A reviewer must select one of those linked sources before the case can
+   verify.
+4. Switch to the expired-certificate packet. Acceptance is refused until fresh
+   evidence replaces it; the case remains `EXPIRED`.
+5. Open the append-only review log, then export the redacted bundle and its
+   manifest.
+
 ## Run locally
 
 ```powershell
@@ -39,9 +55,12 @@ The usable local product has two explicit layers: a browser-native evidence work
 
 ## Verified status
 
-Verified 2026-08-07:
+Verified 2026-08-09:
 
-- `npm.cmd test`: 5 passed, 0 failed.
-- Covered conflicting owner evidence, rejected critical findings, expired evidence, user-authored packets, and contradictory observations.
+- `npm.cmd test`: 7 passed, 0 failed.
+- Covered conflicting owner evidence, rejected critical findings, expired
+  evidence, user-authored packets, contradictory observations, duplicate or
+  dangling evidence, and the rule that an expired source cannot be accepted as
+  a route to verification.
 - The deterministic extraction/reconciliation path was exercised; optional model extraction providers were not.
 - Local HTTP smoke checks returned 200 for the evidence workspace and reconciliation kernel.
